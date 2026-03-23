@@ -1,0 +1,406 @@
+openapi: 3.0.0
+info:
+  title: RIS API - Study Workflow & Imaging Management
+  version: 1.0.0
+  description: OpenAPI contract for Epic E2 - Study Workflow & Imaging Management
+
+servers:
+  - url: http://localhost:4010
+    description: Prism mock server
+
+tags:
+  - name: Study Workflow
+  - name: Study Documents
+  - name: PACS Integration
+  - name: Worksheet Management
+
+paths:
+  /api/v1/studies:
+    post:
+      tags:
+        - Study Workflow
+      summary: Create Study
+      description: Create a study record linked to a patient and appointment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                patientId:
+                  type: integer
+                appointmentId:
+                  type: integer
+                modality:
+                  type: string
+                examinationType:
+                  type: string
+            example:
+              patientId: 1001
+              appointmentId: 3001
+              modality: Ultrasound
+              examinationType: Cardiac
+      responses:
+        '200':
+          description: Study created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  study:
+                    studyId: 5001
+                    patientId: 1001
+                    appointmentId: 3001
+                    accessionNumber: ACC-5001
+                    status: Registered
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/studies/{studyId}:
+    get:
+      tags:
+        - Study Workflow
+      summary: Get Study Details
+      description: Retrieve study details by study ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Study fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  study:
+                    studyId: 5001
+                    patientId: 1001
+                    accessionNumber: ACC-5001
+                    status: Registered
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/studies/{studyId}/status:
+    put:
+      tags:
+        - Study Workflow
+      summary: Update Study Status
+      description: Update study lifecycle status
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+            example:
+              status: Arrived
+      responses:
+        '200':
+          description: Study status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  study:
+                    studyId: 5001
+                    status: Arrived
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/studies/{studyId}/pause:
+    post:
+      tags:
+        - Study Workflow
+      summary: Pause Study
+      description: Pause an in-progress study
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Study paused
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  study:
+                    studyId: 5001
+                    status: Paused
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/studies/{studyId}/resume:
+    post:
+      tags:
+        - Study Workflow
+      summary: Resume Study
+      description: Resume a paused study
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Study resumed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  study:
+                    studyId: 5001
+                    status: Started
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/studies/{studyId}/documents:
+    post:
+      tags:
+        - Study Documents
+      summary: Upload Study Document
+      description: Upload a study-related document
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                fileType:
+                  type: string
+                documentType:
+                  type: string
+            example:
+              fileName: consent_form.pdf
+              fileType: pdf
+              documentType: Consent
+      responses:
+        '200':
+          description: Study document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  document:
+                    documentId: 9001
+                    studyId: 5001
+                    fileName: consent_form.pdf
+                    documentType: Consent
+                errorMessage: null
+                validationErrors: null
+
+    get:
+      tags:
+        - Study Documents
+      summary: Get Study Documents
+      description: Retrieve study-related documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Study documents fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  documents:
+                    - documentId: 9001
+                      studyId: 5001
+                      fileName: consent_form.pdf
+                      documentType: Consent
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/studies/{studyId}/worksheet:
+    post:
+      tags:
+        - Worksheet Management
+      summary: Submit Digital Worksheet
+      description: Submit digital worksheet for a study
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                notes:
+                  type: string
+                submittedBy:
+                  type: string
+            example:
+              notes: Procedure completed successfully
+              submittedBy: technician01
+      responses:
+        '200':
+          description: Worksheet submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  worksheet:
+                    worksheetId: 7001
+                    studyId: 5001
+                    submitted: true
+                errorMessage: null
+                validationErrors: null
+
+    get:
+      tags:
+        - Worksheet Management
+      summary: Get Digital Worksheet
+      description: Retrieve submitted worksheet for a study
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Worksheet fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  worksheet:
+                    worksheetId: 7001
+                    studyId: 5001
+                    notes: Procedure completed successfully
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/studies/{studyId}/pacs-sync:
+    post:
+      tags:
+        - PACS Integration
+      summary: Sync Study to PACS
+      description: Synchronize study identifiers with PACS
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: studyId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Study synchronized with PACS
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  pacsSync:
+                    studyId: 5001
+                    accessionNumber: ACC-5001
+                    synced: true
+                errorMessage: null
+                validationErrors: null
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    DefaultResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        validationErrors:
+          type: object
+          nullable: true
