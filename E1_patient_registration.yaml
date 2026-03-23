@@ -1,0 +1,747 @@
+openapi: 3.0.0
+info:
+  title: RIS API - Patient Registration & Referral
+  version: 1.0.0
+  description: OpenAPI contract for Epic E1 - Patient Registration & Referral Management
+
+servers:
+  - url: http://localhost:4010
+    description: Prism mock server
+
+tags:
+  - name: Patient Registration
+  - name: Referral Management
+  - name: Appointment Scheduling
+
+paths:
+  /api/v1/patients:
+    post:
+      tags:
+        - Patient Registration
+      summary: Create Patient
+      description: Create new patient profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                dob:
+                  type: string
+                mobile:
+                  type: string
+            example:
+              firstName: John
+              lastName: Doe
+              dob: "1980-01-01"
+              mobile: "0400000000"
+      responses:
+        '200':
+          description: Patient created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  patient:
+                    patientId: 1001
+                    firstName: John
+                    lastName: Doe
+                errorMessage: null
+                validationErrors: null
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: false
+                data: null
+                errorMessage: Validation failed
+                validationErrors:
+                  firstName: First name is required
+
+  /api/v1/patients/{patientId}:
+    get:
+      tags:
+        - Patient Registration
+      summary: Get Patient Details
+      description: Retrieve patient by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Patient fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  patient:
+                    patientId: 1001
+                    firstName: John
+                    lastName: Doe
+                errorMessage: null
+                validationErrors: null
+
+    put:
+      tags:
+        - Patient Registration
+      summary: Update Patient
+      description: Update patient details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mobile:
+                  type: string
+            example:
+              mobile: "0412345678"
+      responses:
+        '200':
+          description: Patient updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  patient:
+                    patientId: 1001
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/patients/search:
+    get:
+      tags:
+        - Patient Registration
+      summary: Search Patients
+      description: Search patients by name, MRN, or mobile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Patients retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  patients:
+                    - patientId: 1001
+                      firstName: John
+                      lastName: Doe
+                errorMessage: null
+                validationErrors: null
+          
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: false
+                data: null
+                errorMessage: Validation failed
+                validationErrors:
+                  query: Search query is required
+
+  /api/v1/patients/duplicate-check:
+    post:
+      tags:
+        - Patient Registration
+      summary: Check Duplicate Patient
+      description: Check for possible duplicate patient records
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                dob:
+                  type: string
+                mobile:
+                  type: string
+            example:
+              firstName: John
+              lastName: Doe
+              dob: "1980-01-01"
+              mobile: "0400000000"
+      responses:
+        '200':
+          description: Duplicate check completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  isDuplicate: true
+                  matchedPatients:
+                    - patientId: 1001
+                      firstName: John
+                      lastName: Doe
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/patients/{patientId}/medicare/verify:
+    post:
+      tags:
+        - Patient Registration
+      summary: Verify Medicare
+      description: Validate Medicare details for a patient
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Medicare verification completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  medicareVerification:
+                    patientId: 1001
+                    isValid: true
+                    message: Valid Medicare
+                errorMessage: null
+                validationErrors: null
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: false
+                data: null
+                errorMessage: Validation failed
+                validationErrors:
+                  patientId: Invalid patient ID
+
+
+  /api/v1/referrals:
+    post:
+      tags:
+        - Referral Management
+      summary: Create Referral
+      description: Create referral linked to patient and referrer
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                patientId:
+                  type: integer
+                referrerName:
+                  type: string
+                referralType:
+                  type: string
+            example:
+              patientId: 1001
+              referrerName: Dr Smith
+              referralType: Digital
+      responses:
+        '200':
+          description: Referral created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  referral:
+                    referralId: 501
+                    patientId: 1001
+                    referrerName: Dr Smith
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/referrals/{referralId}:
+    get:
+      tags:
+        - Referral Management
+      summary: Get Referral Details
+      description: Retrieve referral details by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: referralId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Referral fetched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  referral:
+                    referralId: 501
+                    patientId: 1001
+                    referrerName: Dr Smith
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/referrals/{referralId}/documents:
+    post:
+      tags:
+        - Referral Management
+      summary: Upload Referral Document
+      description: Upload referral supporting document
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: referralId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fileName:
+                  type: string
+                fileType:
+                  type: string
+            example:
+              fileName: referral.pdf
+              fileType: pdf
+      responses:
+        '200':
+          description: Referral document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  document:
+                    documentId: 801
+                    referralId: 501
+                    fileName: referral.pdf
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/referrals/{referralId}/link:
+    post:
+      tags:
+        - Referral Management
+      summary: Link Referral to Patient
+      description: Link an existing referral to a patient record
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: referralId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                patientId:
+                  type: integer
+            example:
+              patientId: 1001
+      responses:
+        '200':
+          description: Referral linked to patient
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  link:
+                    referralId: 501
+                    patientId: 1001
+                    linked: true
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/appointments/slots:
+    get:
+      tags:
+        - Appointment Scheduling
+      summary: Get Appointment Slots
+      description: Fetch available appointment slots
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clinic
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: modality
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Appointment slots retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  appointmentSlots:
+                    - slotId: 2001
+                      date: "2026-03-25"
+                      time: "09:00"
+                      available: true
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/appointments:
+    post:
+      tags:
+        - Appointment Scheduling
+      summary: Create Appointment
+      description: Book appointment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                patientId:
+                  type: integer
+                clinic:
+                  type: string
+                appointmentDate:
+                  type: string
+                appointmentTime:
+                  type: string
+            example:
+              patientId: 1001
+              clinic: Melbourne Clinic
+              appointmentDate: "2026-03-25"
+              appointmentTime: "09:00"
+      responses:
+        '200':
+          description: Appointment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  appointment:
+                    appointmentId: 3001
+                    patientId: 1001
+                    status: Booked
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/appointments/{appointmentId}:
+    put:
+      tags:
+        - Appointment Scheduling
+      summary: Update Appointment
+      description: Reschedule or update appointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                appointmentDate:
+                  type: string
+                appointmentTime:
+                  type: string
+            example:
+              appointmentDate: "2026-03-26"
+              appointmentTime: "10:00"
+      responses:
+        '200':
+          description: Appointment updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  appointment:
+                    appointmentId: 3001
+                    status: Rescheduled
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/appointments/{appointmentId}/exams:
+    post:
+      tags:
+        - Appointment Scheduling
+      summary: Add Exams to Appointment
+      description: Add multiple exams to an appointment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                exams:
+                  type: array
+                  items:
+                    type: object
+            example:
+              exams:
+                - modality: Ultrasound
+                  examinationType: Cardiac
+                - modality: XRay
+                  examinationType: Chest
+      responses:
+        '200':
+          description: Exams added to appointment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  appointment:
+                    appointmentId: 3001
+                    examsAdded: true
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/appointments/{appointmentId}/allocation:
+    post:
+      tags:
+        - Appointment Scheduling
+      summary: Allocate Machine
+      description: Allocate machine based on modality and availability
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Machine allocated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  allocation:
+                    appointmentId: 3001
+                    machine: MRI-01
+                    allocated: true
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/appointments/{appointmentId}/pre-study-form:
+    post:
+      tags:
+        - Appointment Scheduling
+      summary: Save Pre-Study Form
+      description: Save pre-study form details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                consent:
+                  type: boolean
+                allergies:
+                  type: string
+                notes:
+                  type: string
+            example:
+              consent: true
+              allergies: Nil
+              notes: Fasting confirmed
+      responses:
+        '200':
+          description: Pre-study form saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  preStudyForm:
+                    appointmentId: 3001
+                    saved: true
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/appointments/{appointmentId}/notifications:
+    post:
+      tags:
+        - Appointment Scheduling
+      summary: Send Appointment Notification
+      description: Send SMS or email appointment confirmation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: appointmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Notification sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  notification:
+                    appointmentId: 3001
+                    status: Sent
+                    channel: SMS
+                errorMessage: null
+                validationErrors: null
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    DefaultResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        validationErrors:
+          type: object
+          nullable: true
