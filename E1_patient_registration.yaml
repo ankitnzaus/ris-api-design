@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  title: RIS API - Patient Registration & Referral
-  version: 1.0.0
-  description: OpenAPI contract for Epic E1 - Patient Registration & Referral Management
+  title: RIS API - Epic E1 Patient Registration, Referral Management & Appointment Setup
+  version: 1.2.0
+  description: OpenAPI contract for Epic E1 covering Patient, Referrer, Clinic, Exam, Referral and Appointment setup workflows
 
 servers:
   - url: http://localhost:4010
@@ -10,8 +10,10 @@ servers:
 
 tags:
   - name: Patient Registration
+  - name: Referrer Management
   - name: Referral Management
   - name: Appointment Scheduling
+  - name: Reference Data
 
 paths:
   /api/v1/patients:
@@ -19,7 +21,7 @@ paths:
       tags:
         - Patient Registration
       summary: Create Patient
-      description: Create new patient profile
+      description: Create a new patient record with demographic, contact, address, emergency contact, insurance and preference information
       security:
         - bearerAuth: []
       requestBody:
@@ -27,24 +29,60 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                firstName:
-                  type: string
-                lastName:
-                  type: string
-                dob:
-                  type: string
-                mobile:
-                  type: string
+              $ref: '#/components/schemas/CreatePatientRequest'
             example:
-              firstName: John
-              lastName: Doe
-              dob: "1980-01-01"
-              mobile: "0400000000"
+              identity:
+                firstName: John
+                middleName: Michael
+                lastName: Doe
+                previousName: Smith
+                dob: "1980-01-01"
+                gender: Male
+                genderAtBirth: Male
+                maritalStatus: Married
+                occupation: Accountant
+                ethnicity: Australian
+              identifiers:
+                medicareNumber: "1234567890"
+                myhrNumber: "MYHR-1001"
+                pacsId: "PACS-1001"
+              insurance:
+                privateInsuranceNumber: "PI-778899"
+                privateInsuranceProvider: Bupa
+              contactDetails:
+                homePhone: "0391112222"
+                officePhone: "0381112222"
+                mobilePhone: "0400000000"
+                otherPhone: "0411222333"
+                otherPhoneType: Work Mobile
+                email: "john.doe@email.com"
+                alternateEmail: "john.alt@email.com"
+                preferredModeOfContact: Mobile
+                preferredContactNumber: "0400000000"
+              address:
+                addressLine1: "10 Main Street"
+                addressLine2: "Apartment 4"
+                addressLine3: null
+                state: VIC
+                postcode: "3000"
+              emergencyContact:
+                firstName: Jane
+                lastName: Doe
+                relationship: Spouse
+                homePhone: null
+                officePhone: "0398765432"
+                mobilePhone: "0411111111"
+              clinicalAdministrativeInfo:
+                allergies: Penicillin
+                bookingPreference: Morning appointments preferred
+                genericNotes: Requires wheelchair access
+                consent: true
+              systemInfo:
+                smsHistory:
+                  - "2026-03-23T09:00:00Z - Registration SMS sent"
       responses:
         '200':
-          description: Patient created
+          description: Patient created successfully
           content:
             application/json:
               schema:
@@ -54,12 +92,62 @@ paths:
                 data:
                   patient:
                     patientId: 1001
-                    firstName: John
-                    lastName: Doe
+                    identity:
+                      firstName: John
+                      middleName: Michael
+                      lastName: Doe
+                      previousName: Smith
+                      dob: "1980-01-01"
+                      gender: Male
+                      genderAtBirth: Male
+                      maritalStatus: Married
+                      occupation: Accountant
+                      ethnicity: Australian
+                    identifiers:
+                      medicareNumber: "1234567890"
+                      myhrNumber: "MYHR-1001"
+                      pacsId: "PACS-1001"
+                    insurance:
+                      privateInsuranceNumber: "PI-778899"
+                      privateInsuranceProvider: Bupa
+                    contactDetails:
+                      homePhone: "0391112222"
+                      officePhone: "0381112222"
+                      mobilePhone: "0400000000"
+                      otherPhone: "0411222333"
+                      otherPhoneType: Work Mobile
+                      email: "john.doe@email.com"
+                      alternateEmail: "john.alt@email.com"
+                      preferredModeOfContact: Mobile
+                      preferredContactNumber: "0400000000"
+                    address:
+                      addressLine1: "10 Main Street"
+                      addressLine2: "Apartment 4"
+                      addressLine3: null
+                      state: VIC
+                      postcode: "3000"
+                    emergencyContact:
+                      firstName: Jane
+                      lastName: Doe
+                      relationship: Spouse
+                      homePhone: null
+                      officePhone: "0398765432"
+                      mobilePhone: "0411111111"
+                    clinicalAdministrativeInfo:
+                      allergies: Penicillin
+                      bookingPreference: Morning appointments preferred
+                      genericNotes: Requires wheelchair access
+                      consent: true
+                    systemInfo:
+                      smsHistory:
+                        - "2026-03-23T09:00:00Z - Registration SMS sent"
+                      isDeleted: false
+                      deletedAt: null
+                      deletedBy: null
                 errorMessage: null
                 validationErrors: null
         '400':
-          description: Invalid request
+          description: Validation failed
           content:
             application/json:
               schema:
@@ -69,14 +157,17 @@ paths:
                 data: null
                 errorMessage: Validation failed
                 validationErrors:
-                  firstName: First name is required
+                  identity.firstName: First name is required
+                  identity.lastName: Last name is required
+                  identity.dob: Date of birth is required
+                  contactDetails.mobilePhone: Mobile phone is required
 
   /api/v1/patients/{patientId}:
     get:
       tags:
         - Patient Registration
       summary: Get Patient Details
-      description: Retrieve patient by ID
+      description: Retrieve a patient record by patient ID
       security:
         - bearerAuth: []
       parameters:
@@ -87,7 +178,7 @@ paths:
             type: integer
       responses:
         '200':
-          description: Patient fetched
+          description: Patient retrieved successfully
           content:
             application/json:
               schema:
@@ -97,16 +188,77 @@ paths:
                 data:
                   patient:
                     patientId: 1001
-                    firstName: John
-                    lastName: Doe
+                    identity:
+                      firstName: John
+                      middleName: Michael
+                      lastName: Doe
+                      previousName: Smith
+                      dob: "1980-01-01"
+                      gender: Male
+                      genderAtBirth: Male
+                      maritalStatus: Married
+                      occupation: Accountant
+                      ethnicity: Australian
+                    identifiers:
+                      medicareNumber: "1234567890"
+                      myhrNumber: "MYHR-1001"
+                      pacsId: "PACS-1001"
+                    insurance:
+                      privateInsuranceNumber: "PI-778899"
+                      privateInsuranceProvider: Bupa
+                    contactDetails:
+                      homePhone: "0391112222"
+                      officePhone: "0381112222"
+                      mobilePhone: "0400000000"
+                      otherPhone: "0411222333"
+                      otherPhoneType: Work Mobile
+                      email: "john.doe@email.com"
+                      alternateEmail: "john.alt@email.com"
+                      preferredModeOfContact: Mobile
+                      preferredContactNumber: "0400000000"
+                    address:
+                      addressLine1: "10 Main Street"
+                      addressLine2: "Apartment 4"
+                      addressLine3: null
+                      state: VIC
+                      postcode: "3000"
+                    emergencyContact:
+                      firstName: Jane
+                      lastName: Doe
+                      relationship: Spouse
+                      homePhone: null
+                      officePhone: "0398765432"
+                      mobilePhone: "0411111111"
+                    clinicalAdministrativeInfo:
+                      allergies: Penicillin
+                      bookingPreference: Morning appointments preferred
+                      genericNotes: Requires wheelchair access
+                      consent: true
+                    systemInfo:
+                      smsHistory:
+                        - "2026-03-23T09:00:00Z - Registration SMS sent"
+                      isDeleted: false
+                      deletedAt: null
+                      deletedBy: null
                 errorMessage: null
+                validationErrors: null
+        '404':
+          description: Patient not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: false
+                data: null
+                errorMessage: Patient not found
                 validationErrors: null
 
     put:
       tags:
         - Patient Registration
       summary: Update Patient
-      description: Update patient details
+      description: Update patient demographic, contact, insurance, emergency and preference information
       security:
         - bearerAuth: []
       parameters:
@@ -120,15 +272,45 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                mobile:
-                  type: string
+              $ref: '#/components/schemas/UpdatePatientRequest'
             example:
-              mobile: "0412345678"
+              identity:
+                previousName: Smith
+                maritalStatus: Married
+                occupation: Accountant
+                ethnicity: Australian
+              identifiers:
+                pacsId: "PACS-1001"
+              insurance:
+                privateInsuranceNumber: "PI-123456"
+                privateInsuranceProvider: Medibank
+              contactDetails:
+                mobilePhone: "0412345678"
+                email: "john.updated@email.com"
+                alternateEmail: "john.secondary@email.com"
+                preferredModeOfContact: Email
+                preferredContactNumber: "0412345678"
+              address:
+                addressLine1: "25 Collins Street"
+                addressLine2: "Level 2"
+                addressLine3: null
+                state: VIC
+                postcode: "3000"
+              emergencyContact:
+                firstName: Jane
+                lastName: Doe
+                relationship: Spouse
+                homePhone: null
+                officePhone: null
+                mobilePhone: "0422222222"
+              clinicalAdministrativeInfo:
+                allergies: Penicillin, Latex
+                bookingPreference: Afternoon appointments preferred
+                genericNotes: Interpreter may be required
+                consent: true
       responses:
         '200':
-          description: Patient updated
+          description: Patient updated successfully
           content:
             application/json:
               schema:
@@ -138,7 +320,78 @@ paths:
                 data:
                   patient:
                     patientId: 1001
+                    contactDetails:
+                      mobilePhone: "0412345678"
+                      email: "john.updated@email.com"
+                      alternateEmail: "john.secondary@email.com"
+                      preferredModeOfContact: Email
+                      preferredContactNumber: "0412345678"
+                    address:
+                      addressLine1: "25 Collins Street"
+                      addressLine2: "Level 2"
+                      state: VIC
+                      postcode: "3000"
+                    clinicalAdministrativeInfo:
+                      allergies: Penicillin, Latex
+                      bookingPreference: Afternoon appointments preferred
+                      genericNotes: Interpreter may be required
+                      consent: true
                 errorMessage: null
+                validationErrors: null
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: false
+                data: null
+                errorMessage: Validation failed
+                validationErrors:
+                  contactDetails.email: Invalid email format
+
+    delete:
+      tags:
+        - Patient Registration
+      summary: Soft Delete Patient
+      description: Soft delete a patient by marking the record as deleted without permanently removing it from the database
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Patient soft deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  patient:
+                    patientId: 1001
+                    isDeleted: true
+                    deletedAt: "2026-03-23T10:30:00Z"
+                    deletedBy: "admin01"
+                    message: Patient record soft deleted successfully
+                errorMessage: null
+                validationErrors: null
+        '404':
+          description: Patient not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: false
+                data: null
+                errorMessage: Patient not found
                 validationErrors: null
 
   /api/v1/patients/search:
@@ -146,7 +399,7 @@ paths:
       tags:
         - Patient Registration
       summary: Search Patients
-      description: Search patients by name, MRN, or mobile
+      description: Search patients by patient ID, name, Medicare number, MyHR number, mobile or email. Soft deleted patients are excluded by default.
       security:
         - bearerAuth: []
       parameters:
@@ -155,9 +408,15 @@ paths:
           required: true
           schema:
             type: string
+        - name: includeDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
-          description: Patients retrieved
+          description: Search completed successfully
           content:
             application/json:
               schema:
@@ -167,13 +426,24 @@ paths:
                 data:
                   patients:
                     - patientId: 1001
-                      firstName: John
-                      lastName: Doe
+                      identity:
+                        firstName: John
+                        middleName: Michael
+                        lastName: Doe
+                        dob: "1980-01-01"
+                      identifiers:
+                        medicareNumber: "1234567890"
+                        myhrNumber: "MYHR-1001"
+                        pacsId: "PACS-1001"
+                      contactDetails:
+                        mobilePhone: "0400000000"
+                        email: "john.doe@email.com"
+                      systemInfo:
+                        isDeleted: false
                 errorMessage: null
                 validationErrors: null
-          
         '400':
-          description: Invalid request
+          description: Search query missing
           content:
             application/json:
               schema:
@@ -190,7 +460,7 @@ paths:
       tags:
         - Patient Registration
       summary: Check Duplicate Patient
-      description: Check for possible duplicate patient records
+      description: Check for possible duplicate patient records using name, date of birth, mobile and Medicare number
       security:
         - bearerAuth: []
       requestBody:
@@ -198,21 +468,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                firstName:
-                  type: string
-                lastName:
-                  type: string
-                dob:
-                  type: string
-                mobile:
-                  type: string
+              $ref: '#/components/schemas/DuplicateCheckRequest'
             example:
               firstName: John
+              middleName: Michael
               lastName: Doe
               dob: "1980-01-01"
-              mobile: "0400000000"
+              mobilePhone: "0400000000"
+              medicareNumber: "1234567890"
       responses:
         '200':
           description: Duplicate check completed
@@ -226,8 +489,14 @@ paths:
                   isDuplicate: true
                   matchedPatients:
                     - patientId: 1001
-                      firstName: John
-                      lastName: Doe
+                      identity:
+                        firstName: John
+                        lastName: Doe
+                        dob: "1980-01-01"
+                      identifiers:
+                        medicareNumber: "1234567890"
+                      contactDetails:
+                        mobilePhone: "0400000000"
                 errorMessage: null
                 validationErrors: null
 
@@ -236,7 +505,7 @@ paths:
       tags:
         - Patient Registration
       summary: Verify Medicare
-      description: Validate Medicare details for a patient
+      description: Verify Medicare details for a patient
       security:
         - bearerAuth: []
       parameters:
@@ -257,12 +526,13 @@ paths:
                 data:
                   medicareVerification:
                     patientId: 1001
+                    medicareNumber: "1234567890"
                     isValid: true
-                    message: Valid Medicare
+                    verifiedAt: "2026-03-23T10:15:00Z"
                 errorMessage: null
                 validationErrors: null
         '400':
-          description: Invalid request
+          description: Invalid patient ID
           content:
             application/json:
               schema:
@@ -270,17 +540,15 @@ paths:
               example:
                 success: false
                 data: null
-                errorMessage: Validation failed
-                validationErrors:
-                  patientId: Invalid patient ID
+                errorMessage: Invalid patient ID
+                validationErrors: null
 
-
-  /api/v1/referrals:
+  /api/v1/referrers:
     post:
       tags:
-        - Referral Management
-      summary: Create Referral
-      description: Create referral linked to patient and referrer
+        - Referrer Management
+      summary: Create Referrer
+      description: Create a referrer record including specialty, provider numbers, practice locations and report delivery preferences
       security:
         - bearerAuth: []
       requestBody:
@@ -288,21 +556,169 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                patientId:
-                  type: integer
-                referrerName:
-                  type: string
-                referralType:
-                  type: string
+              $ref: '#/components/schemas/CreateReferrerRequest'
             example:
-              patientId: 1001
-              referrerName: Dr Smith
-              referralType: Digital
+              identity:
+                firstName: Sarah
+                middleName: Anne
+                lastName: Smith
+                dob: "1975-02-15"
+                gender: Female
+              contactDetails:
+                mobilePhone: "0413000000"
+                notes: Prefers urgent calls to mobile
+              professionalDetails:
+                specialty: Cardiology
+              practiceLocations:
+                - locationName: HeartCare Clinic
+                  providerNumber: "PRV-001"
+                  addressLine1: "100 Collins Street"
+                  addressLine2: "Suite 12"
+                  addressLine3: null
+                  state: VIC
+                  postcode: "3000"
+                  practicePhone: "0399990000"
+                  practiceAdditionalPhone: "0399990001"
+                  practiceFax: "0399990002"
+                  practiceManagerName: Lisa Brown
+                  practiceManagerPhone: "0400123456"
+              reportDeliveryPreferences:
+                - Electronic
+                - Email
       responses:
         '200':
-          description: Referral created
+          description: Referrer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  referrer:
+                    referrerId: 5001
+                    identity:
+                      firstName: Sarah
+                      middleName: Anne
+                      lastName: Smith
+                      dob: "1975-02-15"
+                      gender: Female
+                    contactDetails:
+                      mobilePhone: "0413000000"
+                      notes: Prefers urgent calls to mobile
+                    professionalDetails:
+                      specialty: Cardiology
+                    practiceLocations:
+                      - locationName: HeartCare Clinic
+                        providerNumber: "PRV-001"
+                        addressLine1: "100 Collins Street"
+                        addressLine2: "Suite 12"
+                        addressLine3: null
+                        state: VIC
+                        postcode: "3000"
+                        practicePhone: "0399990000"
+                        practiceAdditionalPhone: "0399990001"
+                        practiceFax: "0399990002"
+                        practiceManagerName: Lisa Brown
+                        practiceManagerPhone: "0400123456"
+                    reportDeliveryPreferences:
+                      - Electronic
+                      - Email
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/referrers/{referrerId}:
+    get:
+      tags:
+        - Referrer Management
+      summary: Get Referrer Details
+      description: Retrieve referrer by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: referrerId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Referrer retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  referrer:
+                    referrerId: 5001
+                    identity:
+                      firstName: Sarah
+                      middleName: Anne
+                      lastName: Smith
+                      dob: "1975-02-15"
+                      gender: Female
+                    contactDetails:
+                      mobilePhone: "0413000000"
+                      notes: Prefers urgent calls to mobile
+                    professionalDetails:
+                      specialty: Cardiology
+                    practiceLocations:
+                      - locationName: HeartCare Clinic
+                        providerNumber: "PRV-001"
+                        addressLine1: "100 Collins Street"
+                        addressLine2: "Suite 12"
+                        addressLine3: null
+                        state: VIC
+                        postcode: "3000"
+                        practicePhone: "0399990000"
+                        practiceAdditionalPhone: "0399990001"
+                        practiceFax: "0399990002"
+                        practiceManagerName: Lisa Brown
+                        practiceManagerPhone: "0400123456"
+                    reportDeliveryPreferences:
+                      - Electronic
+                      - Email
+                errorMessage: null
+                validationErrors: null
+        '404':
+          description: Referrer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: false
+                data: null
+                errorMessage: Referrer not found
+                validationErrors: null
+
+  /api/v1/referrals:
+    post:
+      tags:
+        - Referral Management
+      summary: Create Referral
+      description: Create a referral linking a patient, referrer, clinic and requested examination
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReferralRequest'
+            example:
+              patientId: 1001
+              referrerId: 5001
+              clinicId: 7001
+              examId: 8001
+              referralType: Specialist
+              referralDate: "2026-03-23"
+              clinicalNotes: Cardiology review requested
+      responses:
+        '200':
+          description: Referral created successfully
           content:
             application/json:
               schema:
@@ -311,9 +727,15 @@ paths:
                 success: true
                 data:
                   referral:
-                    referralId: 501
+                    referralId: 2001
                     patientId: 1001
-                    referrerName: Dr Smith
+                    referrerId: 5001
+                    clinicId: 7001
+                    examId: 8001
+                    referralType: Specialist
+                    referralDate: "2026-03-23"
+                    clinicalNotes: Cardiology review requested
+                    status: Active
                 errorMessage: null
                 validationErrors: null
 
@@ -322,7 +744,7 @@ paths:
       tags:
         - Referral Management
       summary: Get Referral Details
-      description: Retrieve referral details by ID
+      description: Retrieve a referral by ID
       security:
         - bearerAuth: []
       parameters:
@@ -333,7 +755,7 @@ paths:
             type: integer
       responses:
         '200':
-          description: Referral fetched
+          description: Referral retrieved successfully
           content:
             application/json:
               schema:
@@ -342,10 +764,27 @@ paths:
                 success: true
                 data:
                   referral:
-                    referralId: 501
+                    referralId: 2001
                     patientId: 1001
-                    referrerName: Dr Smith
+                    referrerId: 5001
+                    clinicId: 7001
+                    examId: 8001
+                    referralType: Specialist
+                    referralDate: "2026-03-23"
+                    clinicalNotes: Cardiology review requested
+                    status: Active
                 errorMessage: null
+                validationErrors: null
+        '404':
+          description: Referral not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: false
+                data: null
+                errorMessage: Referral not found
                 validationErrors: null
 
   /api/v1/referrals/{referralId}/documents:
@@ -353,7 +792,7 @@ paths:
       tags:
         - Referral Management
       summary: Upload Referral Document
-      description: Upload referral supporting document
+      description: Upload a document linked to a referral
       security:
         - bearerAuth: []
       parameters:
@@ -367,18 +806,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                fileName:
-                  type: string
-                fileType:
-                  type: string
+              $ref: '#/components/schemas/UploadDocumentRequest'
             example:
-              fileName: referral.pdf
+              fileName: referral_letter.pdf
               fileType: pdf
+              documentType: Referral Letter
       responses:
         '200':
-          description: Referral document uploaded
+          description: Referral document uploaded successfully
           content:
             application/json:
               schema:
@@ -387,9 +822,11 @@ paths:
                 success: true
                 data:
                   document:
-                    documentId: 801
-                    referralId: 501
-                    fileName: referral.pdf
+                    documentId: 3001
+                    referralId: 2001
+                    fileName: referral_letter.pdf
+                    fileType: pdf
+                    documentType: Referral Letter
                 errorMessage: null
                 validationErrors: null
 
@@ -412,15 +849,12 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                patientId:
-                  type: integer
+              $ref: '#/components/schemas/LinkReferralRequest'
             example:
               patientId: 1001
       responses:
         '200':
-          description: Referral linked to patient
+          description: Referral linked successfully
           content:
             application/json:
               schema:
@@ -428,10 +862,100 @@ paths:
               example:
                 success: true
                 data:
-                  link:
-                    referralId: 501
+                  referral:
+                    referralId: 2001
                     patientId: 1001
                     linked: true
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/reference/clinics:
+    get:
+      tags:
+        - Reference Data
+      summary: Get Clinics
+      description: Retrieve clinic and practice reference data used for referral and appointment setup
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Clinics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  clinics:
+                    - clinicId: 7001
+                      companyPracticeName: Benchmark Radiology
+                      clinicName: Hillside
+                      addressLine1: "50 Main Road"
+                      addressLine2: null
+                      addressLine3: null
+                      state: VIC
+                      postcode: "3037"
+                      googleMapsLink: "https://maps.google.com/?q=Benchmark+Radiology+Hillside"
+                      practicePhone: "0391234567"
+                      practiceFax: "0391234568"
+                      practiceManagerName: Emma Green
+                      practiceManagerPhone: "0400555666"
+                      practiceManagerMobile: "0411222333"
+                      lspn: "LSPN-1234"
+                      approvedModalities:
+                        - XRAY
+                        - US
+                        - CT
+                errorMessage: null
+                validationErrors: null
+
+  /api/v1/reference/exams:
+    get:
+      tags:
+        - Reference Data
+      summary: Get Examination Library
+      description: Retrieve examination library reference data for appointment setup
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: modality
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: clinicId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Examination library retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DefaultResponse'
+              example:
+                success: true
+                data:
+                  exams:
+                    - examId: 8001
+                      modality: US
+                      examinationType: Cardiac
+                      bodyPart: Chest
+                      contrastRequired: false
+                      equipmentRequirement: Ultrasound - General
+                      practiceCode: US-CARD-001
+                      associableExaminations:
+                        - US Doppler
+                      medicareItemNumber: "55113"
+                      medicareRebateFee: 120.0
+                      outOfPocketFee: 40.0
+                      privateBillingFee: 160.0
+                      preparationArrivalTime: Arrive 15 minutes early
+                      smsContentRules: Bring previous cardiac reports
+                      postProcedureInstructions: Resume normal activities
                 errorMessage: null
                 validationErrors: null
 
@@ -439,21 +963,22 @@ paths:
     get:
       tags:
         - Appointment Scheduling
-      summary: Get Appointment Slots
-      description: Fetch available appointment slots
+      summary: Get Available Appointment Slots
+      description: Retrieve available appointment slots by clinic, date and modality
       security:
         - bearerAuth: []
       parameters:
-        - name: clinic
+        - name: clinicId
           in: query
           required: false
           schema:
-            type: string
+            type: integer
         - name: date
           in: query
           required: false
           schema:
             type: string
+            format: date
         - name: modality
           in: query
           required: false
@@ -461,7 +986,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Appointment slots retrieved
+          description: Slots retrieved successfully
           content:
             application/json:
               schema:
@@ -469,11 +994,17 @@ paths:
               example:
                 success: true
                 data:
-                  appointmentSlots:
-                    - slotId: 2001
-                      date: "2026-03-25"
+                  slots:
+                    - clinicId: 7001
+                      clinicName: Hillside
+                      date: "2026-03-24"
                       time: "09:00"
-                      available: true
+                      modality: US
+                    - clinicId: 7001
+                      clinicName: Hillside
+                      date: "2026-03-24"
+                      time: "09:30"
+                      modality: US
                 errorMessage: null
                 validationErrors: null
 
@@ -482,7 +1013,7 @@ paths:
       tags:
         - Appointment Scheduling
       summary: Create Appointment
-      description: Book appointment
+      description: Create an appointment linked to patient, referral, clinic and exam
       security:
         - bearerAuth: []
       requestBody:
@@ -490,24 +1021,18 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                patientId:
-                  type: integer
-                clinic:
-                  type: string
-                appointmentDate:
-                  type: string
-                appointmentTime:
-                  type: string
+              $ref: '#/components/schemas/CreateAppointmentRequest'
             example:
               patientId: 1001
-              clinic: Melbourne Clinic
-              appointmentDate: "2026-03-25"
+              referralId: 2001
+              clinicId: 7001
+              examId: 8001
+              appointmentDate: "2026-03-24"
               appointmentTime: "09:00"
+              bookingNotes: Patient prefers early appointments
       responses:
         '200':
-          description: Appointment created
+          description: Appointment created successfully
           content:
             application/json:
               schema:
@@ -516,8 +1041,14 @@ paths:
                 success: true
                 data:
                   appointment:
-                    appointmentId: 3001
+                    appointmentId: 4001
                     patientId: 1001
+                    referralId: 2001
+                    clinicId: 7001
+                    examId: 8001
+                    appointmentDate: "2026-03-24"
+                    appointmentTime: "09:00"
+                    bookingNotes: Patient prefers early appointments
                     status: Booked
                 errorMessage: null
                 validationErrors: null
@@ -527,7 +1058,7 @@ paths:
       tags:
         - Appointment Scheduling
       summary: Update Appointment
-      description: Reschedule or update appointment
+      description: Update or reschedule an appointment
       security:
         - bearerAuth: []
       parameters:
@@ -541,18 +1072,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                appointmentDate:
-                  type: string
-                appointmentTime:
-                  type: string
+              $ref: '#/components/schemas/UpdateAppointmentRequest'
             example:
-              appointmentDate: "2026-03-26"
-              appointmentTime: "10:00"
+              appointmentDate: "2026-03-25"
+              appointmentTime: "10:30"
+              bookingNotes: Rescheduled due to patient request
       responses:
         '200':
-          description: Appointment updated
+          description: Appointment updated successfully
           content:
             application/json:
               schema:
@@ -561,86 +1088,11 @@ paths:
                 success: true
                 data:
                   appointment:
-                    appointmentId: 3001
+                    appointmentId: 4001
+                    appointmentDate: "2026-03-25"
+                    appointmentTime: "10:30"
+                    bookingNotes: Rescheduled due to patient request
                     status: Rescheduled
-                errorMessage: null
-                validationErrors: null
-
-  /api/v1/appointments/{appointmentId}/exams:
-    post:
-      tags:
-        - Appointment Scheduling
-      summary: Add Exams to Appointment
-      description: Add multiple exams to an appointment
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: appointmentId
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                exams:
-                  type: array
-                  items:
-                    type: object
-            example:
-              exams:
-                - modality: Ultrasound
-                  examinationType: Cardiac
-                - modality: XRay
-                  examinationType: Chest
-      responses:
-        '200':
-          description: Exams added to appointment
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DefaultResponse'
-              example:
-                success: true
-                data:
-                  appointment:
-                    appointmentId: 3001
-                    examsAdded: true
-                errorMessage: null
-                validationErrors: null
-
-  /api/v1/appointments/{appointmentId}/allocation:
-    post:
-      tags:
-        - Appointment Scheduling
-      summary: Allocate Machine
-      description: Allocate machine based on modality and availability
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: appointmentId
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        '200':
-          description: Machine allocated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DefaultResponse'
-              example:
-                success: true
-                data:
-                  allocation:
-                    appointmentId: 3001
-                    machine: MRI-01
-                    allocated: true
                 errorMessage: null
                 validationErrors: null
 
@@ -648,8 +1100,8 @@ paths:
     post:
       tags:
         - Appointment Scheduling
-      summary: Save Pre-Study Form
-      description: Save pre-study form details
+      summary: Submit Pre-Study Form
+      description: Submit patient pre-study form details before the study is performed
       security:
         - bearerAuth: []
       parameters:
@@ -663,21 +1115,14 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                consent:
-                  type: boolean
-                allergies:
-                  type: string
-                notes:
-                  type: string
+              $ref: '#/components/schemas/PreStudyFormRequest'
             example:
               consent: true
-              allergies: Nil
-              notes: Fasting confirmed
+              allergies: Penicillin
+              notes: Patient requires assistance
       responses:
         '200':
-          description: Pre-study form saved
+          description: Pre-study form saved successfully
           content:
             application/json:
               schema:
@@ -686,8 +1131,8 @@ paths:
                 success: true
                 data:
                   preStudyForm:
-                    appointmentId: 3001
-                    saved: true
+                    appointmentId: 4001
+                    submitted: true
                 errorMessage: null
                 validationErrors: null
 
@@ -696,7 +1141,7 @@ paths:
       tags:
         - Appointment Scheduling
       summary: Send Appointment Notification
-      description: Send SMS or email appointment confirmation
+      description: Send an appointment notification to a patient using the preferred contact channel
       security:
         - bearerAuth: []
       parameters:
@@ -707,7 +1152,7 @@ paths:
             type: integer
       responses:
         '200':
-          description: Notification sent
+          description: Notification sent successfully
           content:
             application/json:
               schema:
@@ -716,9 +1161,9 @@ paths:
                 success: true
                 data:
                   notification:
-                    appointmentId: 3001
-                    status: Sent
+                    appointmentId: 4001
                     channel: SMS
+                    sent: true
                 errorMessage: null
                 validationErrors: null
 
@@ -744,4 +1189,566 @@ components:
           nullable: true
         validationErrors:
           type: object
+          nullable: true
+
+    CreatePatientRequest:
+      type: object
+      required:
+        - identity
+        - contactDetails
+        - address
+      properties:
+        identity:
+          $ref: '#/components/schemas/PatientIdentity'
+        identifiers:
+          $ref: '#/components/schemas/PatientIdentifiers'
+        insurance:
+          $ref: '#/components/schemas/PatientInsurance'
+        contactDetails:
+          $ref: '#/components/schemas/PatientContactDetails'
+        address:
+          $ref: '#/components/schemas/PatientAddress'
+        emergencyContact:
+          $ref: '#/components/schemas/PatientEmergencyContact'
+        clinicalAdministrativeInfo:
+          $ref: '#/components/schemas/PatientClinicalAdministrativeInfo'
+        systemInfo:
+          $ref: '#/components/schemas/PatientSystemInfo'
+
+    UpdatePatientRequest:
+      type: object
+      properties:
+        identity:
+          type: object
+          properties:
+            previousName:
+              type: string
+              nullable: true
+            gender:
+              type: string
+              nullable: true
+            genderAtBirth:
+              type: string
+              nullable: true
+            maritalStatus:
+              type: string
+              nullable: true
+            occupation:
+              type: string
+              nullable: true
+            ethnicity:
+              type: string
+              nullable: true
+        identifiers:
+          type: object
+          properties:
+            medicareNumber:
+              type: string
+              nullable: true
+            myhrNumber:
+              type: string
+              nullable: true
+            pacsId:
+              type: string
+              nullable: true
+        insurance:
+          $ref: '#/components/schemas/PatientInsurance'
+        contactDetails:
+          $ref: '#/components/schemas/PatientContactDetails'
+        address:
+          $ref: '#/components/schemas/PatientAddress'
+        emergencyContact:
+          $ref: '#/components/schemas/PatientEmergencyContact'
+        clinicalAdministrativeInfo:
+          $ref: '#/components/schemas/PatientClinicalAdministrativeInfo'
+
+    PatientIdentity:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - dob
+      properties:
+        firstName:
+          type: string
+        middleName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+        previousName:
+          type: string
+          nullable: true
+        dob:
+          type: string
+          format: date
+        gender:
+          type: string
+          nullable: true
+        genderAtBirth:
+          type: string
+          nullable: true
+        maritalStatus:
+          type: string
+          nullable: true
+        occupation:
+          type: string
+          nullable: true
+        ethnicity:
+          type: string
+          nullable: true
+
+    PatientIdentifiers:
+      type: object
+      properties:
+        medicareNumber:
+          type: string
+          nullable: true
+        myhrNumber:
+          type: string
+          nullable: true
+        pacsId:
+          type: string
+          nullable: true
+
+    PatientInsurance:
+      type: object
+      properties:
+        privateInsuranceNumber:
+          type: string
+          nullable: true
+        privateInsuranceProvider:
+          type: string
+          nullable: true
+
+    PatientContactDetails:
+      type: object
+      properties:
+        homePhone:
+          type: string
+          nullable: true
+        officePhone:
+          type: string
+          nullable: true
+        mobilePhone:
+          type: string
+          nullable: true
+        otherPhone:
+          type: string
+          nullable: true
+        otherPhoneType:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        alternateEmail:
+          type: string
+          format: email
+          nullable: true
+        preferredModeOfContact:
+          type: string
+          nullable: true
+        preferredContactNumber:
+          type: string
+          nullable: true
+
+    PatientAddress:
+      type: object
+      properties:
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+          nullable: true
+        addressLine3:
+          type: string
+          nullable: true
+        state:
+          type: string
+        postcode:
+          type: string
+
+    PatientEmergencyContact:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        relationship:
+          type: string
+        homePhone:
+          type: string
+          nullable: true
+        officePhone:
+          type: string
+          nullable: true
+        mobilePhone:
+          type: string
+          nullable: true
+
+    PatientClinicalAdministrativeInfo:
+      type: object
+      properties:
+        allergies:
+          type: string
+          nullable: true
+        bookingPreference:
+          type: string
+          nullable: true
+        genericNotes:
+          type: string
+          nullable: true
+        consent:
+          type: boolean
+          nullable: true
+
+    PatientSystemInfo:
+      type: object
+      properties:
+        smsHistory:
+          type: array
+          items:
+            type: string
+        isDeleted:
+          type: boolean
+          default: false
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        deletedBy:
+          type: string
+          nullable: true
+
+    DuplicateCheckRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        middleName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+        dob:
+          type: string
+          format: date
+        mobilePhone:
+          type: string
+          nullable: true
+        medicareNumber:
+          type: string
+          nullable: true
+
+    CreateReferrerRequest:
+      type: object
+      required:
+        - identity
+        - professionalDetails
+      properties:
+        identity:
+          $ref: '#/components/schemas/ReferrerIdentity'
+        contactDetails:
+          $ref: '#/components/schemas/ReferrerContactDetails'
+        professionalDetails:
+          $ref: '#/components/schemas/ReferrerProfessionalDetails'
+        practiceLocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReferrerPracticeLocation'
+        reportDeliveryPreferences:
+          type: array
+          items:
+            type: string
+            enum:
+              - Electronic
+              - Email
+              - Fax
+              - Hand Delivery to Patient
+
+    ReferrerIdentity:
+      type: object
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+        middleName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+        dob:
+          type: string
+          format: date
+          nullable: true
+        gender:
+          type: string
+          nullable: true
+
+    ReferrerContactDetails:
+      type: object
+      properties:
+        mobilePhone:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    ReferrerProfessionalDetails:
+      type: object
+      properties:
+        specialty:
+          type: string
+          nullable: true
+
+    ReferrerPracticeLocation:
+      type: object
+      properties:
+        locationName:
+          type: string
+        providerNumber:
+          type: string
+          nullable: true
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+          nullable: true
+        addressLine3:
+          type: string
+          nullable: true
+        state:
+          type: string
+        postcode:
+          type: string
+        practicePhone:
+          type: string
+          nullable: true
+        practiceAdditionalPhone:
+          type: string
+          nullable: true
+        practiceFax:
+          type: string
+          nullable: true
+        practiceManagerName:
+          type: string
+          nullable: true
+        practiceManagerPhone:
+          type: string
+          nullable: true
+
+    CreateReferralRequest:
+      type: object
+      required:
+        - patientId
+        - referrerId
+        - clinicId
+        - examId
+        - referralType
+      properties:
+        patientId:
+          type: integer
+        referrerId:
+          type: integer
+        clinicId:
+          type: integer
+        examId:
+          type: integer
+        referralType:
+          type: string
+        referralDate:
+          type: string
+          format: date
+        clinicalNotes:
+          type: string
+          nullable: true
+
+    UploadDocumentRequest:
+      type: object
+      required:
+        - fileName
+        - fileType
+      properties:
+        fileName:
+          type: string
+        fileType:
+          type: string
+        documentType:
+          type: string
+          nullable: true
+
+    LinkReferralRequest:
+      type: object
+      required:
+        - patientId
+      properties:
+        patientId:
+          type: integer
+
+    CreateAppointmentRequest:
+      type: object
+      required:
+        - patientId
+        - referralId
+        - clinicId
+        - examId
+        - appointmentDate
+        - appointmentTime
+      properties:
+        patientId:
+          type: integer
+        referralId:
+          type: integer
+        clinicId:
+          type: integer
+        examId:
+          type: integer
+        appointmentDate:
+          type: string
+          format: date
+        appointmentTime:
+          type: string
+        bookingNotes:
+          type: string
+          nullable: true
+
+    UpdateAppointmentRequest:
+      type: object
+      properties:
+        appointmentDate:
+          type: string
+          format: date
+        appointmentTime:
+          type: string
+        bookingNotes:
+          type: string
+          nullable: true
+
+    PreStudyFormRequest:
+      type: object
+      properties:
+        consent:
+          type: boolean
+        allergies:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    Clinic:
+      type: object
+      properties:
+        clinicId:
+          type: integer
+        companyPracticeName:
+          type: string
+        clinicName:
+          type: string
+        addressLine1:
+          type: string
+        addressLine2:
+          type: string
+          nullable: true
+        addressLine3:
+          type: string
+          nullable: true
+        state:
+          type: string
+        postcode:
+          type: string
+        googleMapsLink:
+          type: string
+          nullable: true
+        practicePhone:
+          type: string
+          nullable: true
+        practiceFax:
+          type: string
+          nullable: true
+        practiceManagerName:
+          type: string
+          nullable: true
+        practiceManagerPhone:
+          type: string
+          nullable: true
+        practiceManagerMobile:
+          type: string
+          nullable: true
+        lspn:
+          type: string
+          nullable: true
+        approvedModalities:
+          type: array
+          items:
+            type: string
+
+    Exam:
+      type: object
+      properties:
+        examId:
+          type: integer
+        modality:
+          type: string
+        examinationType:
+          type: string
+        bodyPart:
+          type: string
+          nullable: true
+        contrastRequired:
+          type: boolean
+        equipmentRequirement:
+          type: string
+          nullable: true
+        practiceCode:
+          type: string
+          nullable: true
+        associableExaminations:
+          type: array
+          items:
+            type: string
+        medicareItemNumber:
+          type: string
+          nullable: true
+        medicareRebateFee:
+          type: number
+          format: float
+          nullable: true
+        outOfPocketFee:
+          type: number
+          format: float
+          nullable: true
+        privateBillingFee:
+          type: number
+          format: float
+          nullable: true
+        medicareAdditionalNumberExclusion:
+          type: string
+          nullable: true
+        medicareRestrictionByTime:
+          type: string
+          nullable: true
+        medicareRestrictionByReferrer:
+          type: string
+          nullable: true
+        medicareRestrictionByLicense:
+          type: string
+          nullable: true
+        medicareRestrictionByOnSiteRadiologist:
+          type: string
+          nullable: true
+        preparationArrivalTime:
+          type: string
+          nullable: true
+        smsContentRules:
+          type: string
+          nullable: true
+        postProcedureInstructions:
+          type: string
           nullable: true
